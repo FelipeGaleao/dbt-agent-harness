@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: dim_proprietarios
+    description: "Entidade Proprietários de Aeronaves: Uma linha por proprietário, consolidando suas aeronaves, valores e UF."
+    columns:
+      - name: sk_proprietario
+        description: "Chave primária e identificador único do proprietário (CPF ou CNPJ)."
+        tests:
+          - unique
+          - not_null
+      - name: nm_proprietario
+        description: "Nome completo ou razão social do proprietário."
+      - name: cd_uf_proprietario
+        description: "Código da Unidade Federativa (UF) do proprietário."
+      - name: tp_proprietario
+        description: "Tipo de proprietário (PESSOA_FISICA, PESSOA_JURIDICA ou DESCONHECIDO)."
+      - name: lista_aeronaves_matricula
+        description: "Lista de matrículas (marcas) das aeronaves associadas a este proprietário."
+      - name: lista_aeronaves_icao
+        description: "Lista de códigos ICAO dos modelos de aeronaves associadas a este proprietário."
+      - name: qtd_aeronaves
+        description: "Quantidade total de aeronaves associadas a este proprietário."
+      - name: vl_total_aeronaves
+        description: "Valor total das aeronaves associadas a este proprietário, baseado no preço de venda (pode ser em moeda mista)."
+      - name: cd_moeda_venda
+        description: "Código da moeda do valor total das aeronaves. Pode ser a moeda predominante se houver múltiplas."

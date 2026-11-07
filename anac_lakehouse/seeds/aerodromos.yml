@@ -1,0 +1,9 @@
+version: 2
+
+seeds:
+  - name: aerodromos_publicos
+    description: "Cadastro de Aeródromos Civis Públicos Brasileiros (ANAC)"
+    config:
+      schema: landing
+      delimiter: ";"
+

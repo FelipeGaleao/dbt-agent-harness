@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: dim_fabricantes
+    description: "Dimensão de fabricantes, com uma linha por fabricante único."
+    config:
+      contract:
+        enforced: true
+      on_schema_change: "append_new_columns"
+    columns:
+      - name: id_fabricante
+        description: "Identificador único do fabricante (PK)."
+        data_type: VARCHAR
+        tests:
+          - unique
+          - not_null
+      - name: nm_fabricante
+        description: "Nome do fabricante."
+        data_type: VARCHAR
+        tests:
+          - not_null
