@@ -40,6 +40,9 @@ models:
     trusted:
       +schema: trusted
       +materialized: table
+    reports:
+      +schema: reports
+      +materialized: table
 
 seeds:
   anac_lakehouse:
