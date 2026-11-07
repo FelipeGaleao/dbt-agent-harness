@@ -6,112 +6,103 @@
 /*
     Model: dim_aeronaves
     Pattern: Entity-Centric Data Modeling (ECM)
-    Granularidade: 1 linha por aeronave registrada (Chave natural: marca_aeronave / MARCAS)
-    Objetivo: Consolidar todas as características cadastrais, técnicas, operacionais,
-              indicadores de conformidade (features) e status de aeronavegabilidade em uma única wide table.
+    Granularidade: 1 linha por aeronave registrada (Chave natural: marca_aeronave)
+    Origem: stg_anac__rab_aeronaves
+    Objetivo: Consolidar características de negócio da entidade Aeronave,
+              aplicando o Entity-Centric Mindset (features calculadas, conformidade operacional,
+              regras de negócio e auditoria analítica).
 */
 
-with raw_current as (
-    select * from {{ ref('anac__rab_aeronaves_current') }}
-),
-
-features as (
-    select
-        -- 1. Chaves de Identificação da Entidade (Entity Spine / Keys)
-        upper(trim(MARCAS)) as marca_aeronave,
-        trim(NR_CERT_MATRICULA) as nr_certificado_matricula,
-        trim(NR_SERIE) as nr_serie,
-
-        -- 2. Atributos Descritivos e Especificações Técnicas do Ativo
-        upper(trim(NM_FABRICANTE)) as nm_fabricante,
-        upper(trim(DS_MODELO)) as ds_modelo,
-        upper(trim(CD_TIPO_ICAO)) as cd_tipo_icao,
-        upper(trim(CD_TIPO)) as cd_tipo_aeronave,
-        upper(trim(CD_CLS)) as cd_classe,
-        upper(trim(TP_MOTOR)) as tp_motor,
-        upper(trim(TP_POUSO)) as tp_pouso,
-        upper(trim(CF_OPERACIONAL)) as classificacao_operacional,
-        upper(trim(DS_CATEGORIA_HOMOLOGACAO)) as categoria_homologacao,
-        upper(trim(TP_OPERACAO)) as tp_operacao,
-
-        -- 3. Métricas Físicas e Capacidades Operacionais
-        cast(QT_MOTOR as integer) as qtd_motores,
-        cast(NR_PASSAGEIROS_MAX as integer) as qtd_passageiros_max,
-        cast(NR_TRIPULACAO_MIN as integer) as qtd_tripulacao_min,
-        cast(NR_ASSENTOS as integer) as qtd_assentos_total,
-        cast(NR_PMD as double) as pmd_kg,
-        cast(NR_ANO_FABRICACAO as integer) as ano_fabricacao,
-
-        -- 4. Marcos Temporais e Datas de Registro
-        try_cast(DT_MATRICULA as date) as dt_matricula,
-        try_cast(DT_VALIDADE_CA as date) as dt_validade_ca,
-        try_cast(DT_VALIDADE_CVA as date) as dt_validade_cva,
-        try_cast(DT_CANC as date) as dt_cancelamento,
-        try_cast(DT_VENDA as date) as dt_venda,
-
-        -- 5. Informações de Cancelamento e Gravames
-        upper(trim(DS_MOTIVO_CANC)) as ds_motivo_cancelamento,
-        upper(trim(DS_GRAVAME)) as ds_gravame,
-        upper(trim(CD_INTERDICAO)) as cd_interdicao,
-
-        -- 6. Dados Estruturados / Relacionamentos (Documentos JSON)
-        PROPRIETARIOS as proprietarios_json,
-        OPERADORES as operadores_json,
-
-        -- 7. Dados Comerciais
-        trim(DS_MOEDA) as cd_moeda_venda,
-        cast(NR_PRECO_VENDA as double) as vl_preco_venda,
-
-        -- 8. Metadados de Ingestão e Linhagem Técnica
-        row_hash,
-        snapshot_date,
-        last_updated_at
-
-    from raw_current
+with stg_aeronaves as (
+    select * from {{ ref('stg_anac__rab_aeronaves') }}
 ),
 
 enriched_entity as (
     select
-        *,
-        -- Features Calculadas (ECM Mindset):
-        -- Idade do ativo em anos
+        -- 1. Identificadores da Entidade
+        cd_marca_aeronave as marca_aeronave,
+        nr_certificado_matricula,
+        nr_serie,
+
+        -- 2. Especificações Técnicas do Ativo
+        nm_fabricante,
+        ds_modelo,
+        cd_tipo_icao,
+        cd_tipo_aeronave,
+        cd_classe,
+        tp_motor,
+        qt_motores as qtd_motores,
+        tp_pouso,
+        nr_pmd_kg as pmd_kg,
+        nr_ano_fabricacao as ano_fabricacao,
+
+        -- Feature: Idade do ativo calculada
         case
-            when ano_fabricacao is not null and ano_fabricacao > 1900
-            then date_part('year', current_date) - ano_fabricacao
+            when nr_ano_fabricacao is not null and nr_ano_fabricacao > 1900
+            then date_part('year', current_date) - nr_ano_fabricacao
             else null
         end as idade_aeronave_anos,
 
-        -- Contadores de dias restantes / expirados para auditoria
+        -- 3. Capacidades
+        qt_tripulacao_min as qtd_tripulacao_min,
+        qt_passageiros_max as qtd_passageiros_max,
+        qt_assentos_total as qtd_assentos_total,
+
+        -- 4. Classificação e Operação
+        ds_classificacao_operacional as classificacao_operacional,
+        ds_categoria_homologacao as categoria_homologacao,
+        tp_operacao,
+
+        -- 5. Flags de Conformidade e Decisão Operacional (Features de Negócio ECM)
+        coalesce(cd_interdicao = 'S', false) as is_interditada,
+        coalesce(dt_cancelamento is not null or cd_interdicao = 'M', false) as is_matricula_cancelada,
+        coalesce(ds_gravame is not null and trim(ds_gravame) != '' and trim(ds_gravame) != 'NENHUM GRAVAME REGISTRADO', false) as has_gravame,
+
+        case
+            when dt_validade_cva is not null and dt_validade_cva >= current_date then true
+            else false
+        end as is_cva_valido,
+
+        case
+            when dt_validade_ca is not null and dt_validade_ca >= current_date then true
+            else false
+        end as is_ca_valido,
+
+        -- 6. Datas e Prazos Regulatórios
+        dt_matricula,
+        dt_validade_cva,
         case
             when dt_validade_cva is not null
             then date_diff('day', current_date, dt_validade_cva)
             else null
         end as dias_ate_vencimento_cva,
 
+        dt_validade_ca,
         case
             when dt_validade_ca is not null
             then date_diff('day', current_date, dt_validade_ca)
             else null
         end as dias_ate_vencimento_ca,
 
-        -- Flags de Status Operacional e Conformidade
-        coalesce(cd_interdicao = 'S', false) as is_interditada,
-        coalesce(dt_cancelamento is not null or cd_interdicao = 'M', false) as is_matricula_cancelada,
-        coalesce(ds_gravame is not null and trim(ds_gravame) != '', false) as has_gravame,
+        dt_cancelamento,
+        ds_motivo_cancelamento,
+        ds_gravame,
 
-        -- Validade da inspeção técnica (CVA)
-        case
-            when dt_validade_cva is not null and dt_validade_cva >= current_date then true
-            else false
-        end as is_cva_valido,
+        -- 7. Aspectos Comerciais
+        dt_venda,
+        cd_moeda_venda,
+        vl_preco_venda,
 
-        -- Validade do certificado de aeronavegabilidade (CA)
-        case
-            when dt_validade_ca is not null and dt_validade_ca >= current_date then true
-            else false
-        end as is_ca_valido
+        -- 8. Relacionamentos Documentais
+        proprietarios_json,
+        operadores_json,
 
-    from features
+        -- 9. Metadados de Linhagem Técnica
+        row_hash,
+        snapshot_date,
+        last_updated_at
+
+    from stg_aeronaves
 )
 
 select
@@ -150,15 +141,14 @@ select
     is_cva_valido,
     is_ca_valido,
 
-    -- Flag de Conclusão Sintética (Health Status da Entidade):
-    -- Aeronave considerada apta a voar se não estiver interditada, com matrícula ativa e CVA válido.
+    -- Health Status Consolidado da Entidade:
     (
         not is_interditada
         and not is_matricula_cancelada
         and is_cva_valido
     ) as is_apta_para_voo,
 
-    -- Datas Críticas
+    -- Datas Críticas e Auditoria de Prazos
     dt_matricula,
     dt_validade_cva,
     dias_ate_vencimento_cva,
@@ -177,10 +167,9 @@ select
     proprietarios_json,
     operadores_json,
 
-    -- Auditoria
+    -- Linhagem e Auditoria
     row_hash,
     snapshot_date,
     last_updated_at
 
 from enriched_entity
-

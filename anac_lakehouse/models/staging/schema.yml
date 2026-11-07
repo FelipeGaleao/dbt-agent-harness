@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_anac__rab_aeronaves
+    description: "Modelo de staging com limpeza, padronização de nomenclatura e tipagem segura das aeronaves do RAB."
+    columns:
+      - name: cd_marca_aeronave
+        description: "Matrícula/marcas da aeronave (PK de staging)."
+        tests:
+          - unique
+          - not_null
+      - name: row_hash
+        tests:
+          - not_null
+
