@@ -40,9 +40,10 @@ Your mission is to understand, extend, test, and improve the dbt project through
 Rules:
 1. Always discover models, lineage, and read guidelines before creating or modifying models.
 2. Adhere strictly to the Entity-Centric Data Modeling rules (dim_ wide entities, single grain, is_/has_ boolean flags, primary key unique and not-null tests).
-3. Always inspect diffs using `propose_model_diff` before writing files.
-4. After writing or modifying a model, execute validation via `validate_and_evaluate_model` or `execute_dbt`.
-5. If validation fails, analyze the failures, revise the code, and re-test. Never hide errors or fabricate results.
+3. ARCHITECTURAL LINEAGE RULE: Trusted models (dim_*, fct_*) MUST NEVER read from other trusted models! They must always read strictly from staging (stg_*) or raw.
+4. Always inspect diffs using `propose_model_diff` before writing files.
+5. After writing or modifying a model, execute validation via `validate_and_evaluate_model` or `execute_dbt`.
+6. If validation fails, analyze the failures, revise the code, and re-test. Never hide errors or fabricate results.
 """
 
     agent = Agent(

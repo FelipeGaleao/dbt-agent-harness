@@ -46,7 +46,33 @@ def test_validate_trusted_model_naming_violation(guidelines_service):
     assert rule_1.severity == "error"
 
 
-def test_validate_pk_and_boolean_yaml_compliance(guidelines_service):
+def test_validate_trusted_reading_from_trusted_fails(guidelines_service):
+    sql_bad = """
+    select * from {{ ref('dim_aeronaves') }}
+    """
+    results = guidelines_service.validate_model_compliance(
+        model_name="dim_proprietarios",
+        sql_content=sql_bad,
+        layer="trusted",
+    )
+    rule_8 = next((r for r in results if r.rule_id == "ECM-008"), None)
+    assert rule_8 is not None
+    assert rule_8.passed is False
+    assert rule_8.severity == "error"
+
+
+def test_validate_trusted_reading_from_staging_passes(guidelines_service):
+    sql_good = """
+    select * from {{ ref('stg_anac__rab_aeronaves') }}
+    """
+    results = guidelines_service.validate_model_compliance(
+        model_name="dim_proprietarios",
+        sql_content=sql_good,
+        layer="trusted",
+    )
+    rule_8 = next((r for r in results if r.rule_id == "ECM-008"), None)
+    assert rule_8 is not None
+    assert rule_8.passed is True
     yaml_content = """
 version: 2
 models:

@@ -74,6 +74,13 @@ class GuidelinesService:
                 description="All models in trusted layer must have a description in schema YAML explaining entity grain.",
                 severity="warning",
             ),
+            GuidelineRule(
+                id="ECM-008",
+                title="Trusted Layer Lineage Dependency",
+                category="Architectural Layers",
+                description="Trusted layer models cannot depend on other trusted models. They must read strictly from staging (stg_) or raw.",
+                severity="error",
+            ),
         ]
 
     def validate_model_compliance(
@@ -96,6 +103,27 @@ class GuidelinesService:
                     rule_title="Trusted Layer Table Naming",
                     passed=valid_prefix,
                     details=f"Model name '{model_name}' starts with dim_/fct_/bridge_" if valid_prefix else f"Model name '{model_name}' violates trusted naming convention (must start with dim_, fct_, or bridge_).",
+                    severity="error",
+                )
+            )
+
+            # Rule ECM-008: Trusted lineage restriction (trusted cannot read from trusted)
+            refs = re.findall(r"ref\(\s*['\"]([^'\"]+)['\"]\s*\)", sql_content)
+            trusted_refs = [
+                r for r in refs
+                if r.startswith("dim_") or r.startswith("fct_") or r.startswith("bridge_")
+            ]
+            has_trusted_dependency = len(trusted_refs) > 0
+            results.append(
+                ComplianceCheckResult(
+                    rule_id="ECM-008",
+                    rule_title="Trusted Layer Lineage Dependency",
+                    passed=not has_trusted_dependency,
+                    details=(
+                        f"Violates lineage rule: trusted model '{model_name}' directly references other trusted model(s): {', '.join(trusted_refs)}. Trusted models must read strictly from staging (stg_) or raw."
+                        if has_trusted_dependency
+                        else f"Model '{model_name}' respects trusted lineage (reads only from staging/raw)."
+                    ),
                     severity="error",
                 )
             )

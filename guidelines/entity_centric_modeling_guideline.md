@@ -125,4 +125,5 @@ Antes de finalizar qualquer modelo na camada `trusted`, o agente deve validar:
 - [ ] Todas as flags de status foram convertidas para booleanos nomeados com `is_` ou `has_`?
 - [ ] Métricas temporais (idades, dias decorridos, dias até vencimento) foram pré-computadas?
 - [ ] A documentação no `schema.yml` descreve as regras de negócio utilizadas nas métricas calculadas?
+- [ ] **Regra de Linhagem da Camada Trusted:** O modelo NUNCA referencia outro modelo da camada `trusted` (`ref('dim_...')` ou `ref('fct_...')`). Todas as referências da camada `trusted` devem vir estritamente de `staging` (`stg_...`) ou `raw`.
 
