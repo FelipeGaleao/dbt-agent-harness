@@ -8,19 +8,19 @@
     Model: dim_proprietario
     Pattern: Entity-Centric Data Modeling (ECM)
     Granularidade: 1 linha por proprietário (Chave natural: cpf_cnpj_proprietario)
-    Origem: dim_aeronaves
+    Origem: stg_anac__rab_aeronaves
     Objetivo: Consolidar informações de proprietários de aeronaves, agregando
               suas aeronaves e valores associados.
 */
 
-WITH dim_aeronaves AS (
+WITH stg_aeronaves AS (
     SELECT
-        marca_aeronave,
+        cd_marca_aeronave AS marca_aeronave,
         cd_tipo_icao,
         proprietarios_json,
         vl_preco_venda,
         cd_moeda_venda
-    FROM {{ ref('dim_aeronaves') }}
+    FROM {{ ref('stg_anac__rab_aeronaves') }}
 ),
 
 unpacked_proprietarios AS (
@@ -34,7 +34,7 @@ unpacked_proprietarios AS (
         json_extract(prop.value, '$.NOME') AS nm_proprietario,
         json_extract(prop.value, '$.UF') AS cd_uf_proprietario
     FROM
-        dim_aeronaves a,
+        stg_aeronaves a,
         json_each(a.proprietarios_json) AS prop
 ),
 

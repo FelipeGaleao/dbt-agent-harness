@@ -1,0 +1,132 @@
+version: 2
+
+models:
+  - name: dim_aeronaves
+    description: "Tabela dimensão ampla (Wide Entity Table) sob o paradigma Entity-Centric Data Modeling (ECM), implementada como Slowly Changing Dimension Type 2 (SCD2). Representa o histórico e a visão corrente de cada Aeronave, rastreando alterações em seus atributos ao longo do tempo. Uma linha por versão histórica da aeronave, identificada por `sk_aeronave`."
+    columns:
+      - name: sk_aeronave
+        description: "Chave substituta (Surrogate Key) da Aeronave. É a chave primária para a dimensão SCD2, garantindo unicidade para cada versão histórica da aeronave."
+        tests:
+          - unique
+          - not_null
+      - name: marca_aeronave
+        description: "Marcas de nacionalidade e matrícula da aeronave (Chave de Negócio - Business Key)."
+        tests:
+          - not_null
+      - name: nr_certificado_matricula
+        description: "Número do Certificado de Matrícula (CM) expedido pela ANAC."
+      - name: nr_serie
+        description: "Número de série atribuído à aeronave pelo fabricante."
+      - name: nm_fabricante
+        description: "Nome padronizado do fabricante da aeronave (ex.: EMBRAER, BOEING, CESSNA)."
+      - name: ds_modelo
+        description: "Modelo comercial homologado da aeronave."
+      - name: cd_tipo_icao
+        description: "Código identificador do modelo de aeronave segundo o padrão ICAO/OACI (ex.: B738, E195, C185)."
+      - name: cd_tipo_aeronave
+        description: "Tipo aerodinâmico ou configuração da aeronave (ex.: MNTE - Monomotor Terrestre, HELI)."
+      - name: cd_classe
+        description: "Código da classe da aeronave conforme critérios da ANAC (ex.: L1P, L2T)."
+      - name: tp_motor
+        description: "Tipo de propulsão instalada (ex.: PISTAO, TURBOELICE, TURBOFAN)."
+      - name: qtd_motores
+        description: "Quantidade de motores instalados na aeronave."
+      - name: tp_pouso
+        description: "Configuração do trem de pouso da aeronave (ex.: TRICICLO, CONVENCIONAL, FLUTUADOR)."
+      - name: pmd_kg
+        description: "Peso Máximo de Decolagem (PMD) homologado em quilogramas (kg)."
+      - name: ano_fabricacao
+        description: "Ano civil de fabricação da aeronave."
+      - name: idade_aeronave_anos
+        description: "Feature calculada: Idade atual do ativo em anos decorridos desde a fabricação."
+      - name: qtd_tripulacao_min
+        description: "Quantidade mínima regulatória de tripulantes técnicos para voo seguro."
+      - name: qtd_passageiros_max
+        description: "Capacidade máxima de passageiros homologada para a aeronave."
+      - name: qtd_assentos_total
+        description: "Total de assentos disponíveis a bordo (tripulação + passageiros)."
+      - name: classificacao_operacional
+        description: "Regulamento aeronáutico operacional (ex.: RBAC 91 - Geral, RBAC 121 - Linha Aérea Regular, RBAC 135 - Táxi Aéreo)."
+      - name: categoria_homologacao
+        description: "Categoria de registro e certificação (ex.: NORMAL, TRANSPORTE, RESTRITA)."
+      - name: tp_operacao
+        description: "Tipo de serviço aéreo ou uso atribuído (ex.: PRIVADA, COMERCIAL, INSTRUCAO, PUBLICA)."
+      - name: is_interditada
+        description: "Feature booleana indicando se a aeronave possui medida de interdição ou impedimento formal da ANAC."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: is_matricula_cancelada
+        description: "Feature booleana indicando se a matrícula foi cancelada ou cancelamento formal registrado."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: has_gravame
+        description: "Feature booleana indicando se há gravame, restrição financeira ou alienação fiduciária declarada."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: is_cva_valido
+        description: "Feature booleana indicando se o Certificado de Verificação de Aeronavegabilidade (CVA) está dentro da validade na data atual."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: is_ca_valido
+        description: "Feature booleana indicando se o Certificado de Aeronavegabilidade (CA) está dentro da validade na data atual."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: is_apta_para_voo
+        description: "Health status consolidado da entidade: Retorna true apenas se a aeronave não estiver interditada, com matrícula ativa e com CVA vigente."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: dt_matricula
+        description: "Data original de registro da matrícula junto ao RAB/ANAC."
+      - name: dt_validade_cva
+        description: "Data limite de validade da inspeção do Certificado de Verificação de Aeronavegabilidade (CVA)."
+      - name: dias_ate_vencimento_cva
+        description: "Feature de auditoria/alerta: Quantidade de dias até o vencimento do CVA (negativo se já expirado)."
+      - name: dt_validade_ca
+        description: "Data limite de validade do Certificado de Aeronavegabilidade (CA)."
+      - name: dias_ate_vencimento_ca
+        description: "Feature de auditoria: Dias restantes até a expiração do CA (negativo se expirado)."
+      - name: dt_cancelamento
+        description: "Data em que o cancelamento de registro foi averbado, se aplicável."
+      - name: ds_motivo_cancelamento
+        description: "Motivo registrado do cancelamento da matrícula (ex.: PERECIMENTO, EXPORTACAO, A PEDIDO)."
+      - name: ds_gravame
+        description: "Descrição de eventuais ônus reais registrados."
+      - name: dt_venda
+        description: "Data comunicada de transferência ou venda."
+      - name: cd_moeda_venda
+        description: "Moeda declarada no valor de alienação (ex.: R$, US$)."
+      - name: vl_preco_venda
+        description: "Preço declarado da aeronave na transação."
+      - name: proprietarios_json
+        description: "Lista de proprietários estruturada em formato JSON (Nome, CPF/CNPJ, UF, Participação)."
+      - name: operadores_json
+        description: "Lista de operadores da aeronave estruturada em formato JSON."
+      - name: row_hash
+        description: "Hash MD5 de controle da linha vindo da camada raw."
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Data do snapshot de referência de origem."
+      - name: last_updated_at
+        description: "Timestamp da última atualização/ingestão no lakehouse."
+      - name: dt_vigencia_inicio
+        description: "Data de início da validade deste registro da aeronave (SCD2)."
+        tests:
+          - not_null
+      - name: dt_vigencia_fim
+        description: "Data de fim da validade deste registro da aeronave (NULL para o registro atual) (SCD2)."
+      - name: is_atual
+        description: "Flag booleana: TRUE se este é o registro válido mais recente da aeronave (SCD2)."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: change_hash
+        description: "Hash MD5 calculado sobre os atributos da aeronave para detectar mudanças e gerenciar o SCD2."
+        tests:
+          - not_null
