@@ -36,6 +36,17 @@ def test_commit_changes(mocker, git_service, tmp_path):
     assert "feat: add model" in out
 
 
+def test_factory_commit_tool_uses_path(mocker):
+    from harness.services.factory import build_harness_tool_registry
+    registry, _ = build_harness_tool_registry()
+    tool = registry.get("commit_changes_to_worktree")
+    assert tool is not None
+    mocker.patch("subprocess.run", return_value=MagicMock(returncode=0, stdout="clean", stderr=""))
+    # Should not raise NameError: name 'Path' is not defined
+    res = tool.handler(message="test commit")
+    assert "success" in res
+
+
 def test_create_pull_request(mocker, git_service, tmp_path):
     mock_run = mocker.patch("subprocess.run")
     # Check if exists (fails with 1, so creates) -> gh pr create returns url
