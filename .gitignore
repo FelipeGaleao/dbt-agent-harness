@@ -1,2 +1,7 @@
 logs/dbt.log
 .DS_Store
+*.pyc
+*.egg-info
+.pytest_cache/
+.harness/
+.env

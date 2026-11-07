@@ -1,11 +1,21 @@
 [project]
 name = "dbt-agent-harness"
 version = "0.1.0"
-description = "Add your description here"
+description = "Production-minded, framework-agnostic Agentic Development Harness for dbt and DuckDB"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "dbt>=2.0.11",
     "dbt-core>=1.12.6",
     "dbt-duckdb>=1.11.1",
+    "google-adk>=2.14.0",
+    "pydantic>=2.10.0",
+    "pytest>=9.2.0",
+    "pytest-mock>=3.17.0",
 ]
+
+[project.scripts]
+harness = "harness.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["harness*"]

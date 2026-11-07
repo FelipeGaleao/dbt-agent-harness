@@ -34,7 +34,7 @@ O **ECM** inverte essa lógica: **as Entidades de Negócio (ex.: Aeronave, Propr
 | **Landing** | Dados brutos ingeridos sem alteração técnica ou lógica (seeds/arquivos externos). | `landing_<fonte>` | Linha do arquivo original. |
 | **Raw** | Histórico/Timeline com tipagem básica e controle de auditoria (`row_hash`, `loaded_at`). | `raw.<source>__<resource>_timeline`, `..._current` | Snapshot ou evento bruto. |
 | **Staging** | **Sanitização Técnica 1:1:** Limpeza, renomeação de colunas, parsing resiliente (`try_cast`, `try_strptime`), remoção de caracteres de unidade (kg, R$) e normalização de nulos. **Não contém regras de negócio ou métricas agregadas.** | `staging.stg_<source>__<entity>` | 1:1 com a fonte raw limpa. |
-| **Trusted (ECM)** | **Modelagem Entity-Centric e Negócio:** Wide tables centradas nas entidades, features pré-calculadas (ex: idade, status consolidado, dias para vencimento), regras de negócio e flags analíticas (`is_apta_para_voo`). Consome estritamente do `staging`. | `trusted.dim_<entity>`, `trusted.fct_<entity>_<event>` | **1 linha = 1 instância da Entidade** (ou `dim_<entity>_daily`). |
+| **Trusted (ECM)** | **Modelagem Entity-Centric e Negócio:** Wide tables centradas nas entidades, features pré-calculadas (ex: idade, status consolidado, dias para vencimento), regras de negócio e flags analíticas (`is_apta_para_voo`). **Linhagem Estrita: Modelos trusted NUNCA devem ler de outros modelos trusted. Devem consumir estritamente da camada staging (ou raw quando justificado).** | `trusted.dim_<entity>`, `trusted.fct_<entity>_<event>` | **1 linha = 1 instância da Entidade** (ou `dim_<entity>_daily`). |
 
 ---
 
