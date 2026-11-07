@@ -20,6 +20,19 @@ class DbtRunner:
 
     def __init__(self, config: Optional[HarnessConfig] = None) -> None:
         self.config = config or get_config()
+        self._custom_dbt_project_dir: Optional[Path] = None
+
+    def set_project_dir(self, project_dir: Optional[Path]) -> None:
+        """Sets an alternate working directory (e.g. for an active git worktree)."""
+        self._custom_dbt_project_dir = Path(project_dir).resolve() if project_dir else None
+
+    @property
+    def current_project_dir(self) -> Path:
+        return self._custom_dbt_project_dir or self.config.dbt_project_dir
+
+    @property
+    def current_target_dir(self) -> Path:
+        return self.current_project_dir / "target"
 
     def execute(
         self,
@@ -49,8 +62,8 @@ class DbtRunner:
         if vars_dict:
             cmd_args.extend(["--vars", json.dumps(vars_dict)])
 
-        # Ensure profiles dir is set to anac_lakehouse
-        cmd_args.extend(["--profiles-dir", str(self.config.dbt_project_dir)])
+        # Ensure profiles dir is set to current project dir
+        cmd_args.extend(["--profiles-dir", str(self.current_project_dir)])
 
         start_time = time.time()
         try:
@@ -60,7 +73,7 @@ class DbtRunner:
 
             proc = subprocess.run(
                 cmd_args,
-                cwd=str(self.config.dbt_project_dir),
+                cwd=str(self.current_project_dir),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -114,7 +127,7 @@ class DbtRunner:
             )
 
     def _parse_run_results(self) -> tuple[List[Dict[str, Any]], List[str]]:
-        run_results_path = self.config.dbt_target_dir / "run_results.json"
+        run_results_path = self.current_target_dir / "run_results.json"
         failures: List[Dict[str, Any]] = []
         affected_models: List[str] = []
 

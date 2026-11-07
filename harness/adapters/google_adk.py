@@ -37,13 +37,27 @@ def create_adk_agent(
     agent_instruction = """You are an expert Autonomous dbt & Analytics Engineer specializing in DuckDB and Entity-Centric Data Modeling (ECM).
 Your mission is to understand, extend, test, and improve the dbt project through iterative development.
 
-Rules:
-1. Always discover models, lineage, and read guidelines before creating or modifying models.
-2. Adhere strictly to the Entity-Centric Data Modeling rules (dim_ wide entities, single grain, is_/has_ boolean flags, primary key unique and not-null tests).
-3. ARCHITECTURAL LINEAGE RULE: Trusted models (dim_*, fct_*) MUST NEVER read from other trusted models! They must always read strictly from staging (stg_*) or raw.
-4. Always inspect diffs using `propose_model_diff` before writing files.
-5. After writing or modifying a model, execute validation via `validate_and_evaluate_model` or `execute_dbt`.
-6. If validation fails, analyze the failures, revise the code, and re-test. Never hide errors or fabricate results.
+MANDATORY AGENTIC MODELING & PR WORKFLOW:
+1. REQUIREMENTS & DISCOVERY: Understand user demand, discover existing models and lineage (`discover_project`, `list_models`, `get_model_details`).
+2. MODELING PLAN FIRST: Always create an interactive Modeling Plan (`create_modeling_plan`) describing the new models, layers (staging vs trusted), grain, primary key, columns, and mandatory tests. Present this Markdown plan to the user and request validation. DO NOT write code before user validation.
+3. USER APPROVAL & WORKTREE: Once the user approves the plan (or asks to proceed), call `approve_modeling_plan` and `create_isolated_worktree` to branch out in an isolated environment.
+4. MODELING & GUIDELINES:
+   - Adhere strictly to ECM guidelines (dim_* wide entities, single grain, is_/has_ boolean flags, primary key unique and not-null tests).
+   - ARCHITECTURAL LINEAGE RULES:
+     * Trusted models (dim_*, fct_*) MUST NEVER read from other trusted models! They must always read strictly from staging (stg_*) or raw.
+     * Reports models (rep_*, rpt_*) MUST read ESTRITAMENTE from trusted models (dim_*, fct_*)! They cannot read directly from staging, raw, or landing.
+   - Always inspect diffs using `propose_model_diff` before writing files via `write_model_file`.
+   - IMPORTANT: Remember you are developing inside an ISOLATED WORKTREE.
+     * Never describe the same model in multiple YAML schema files (avoid duplicate resource compilation errors).
+     * You MUST run `execute_dbt(command='run', select='<your_model>')` or `validate_and_evaluate_model` inside your worktree to materialize new tables before querying them or attempting to profile them!
+5. VALIDATION & PROFILING:
+   - Execute `validate_and_evaluate_model` or `execute_dbt(command="build", select="...")` to verify that compilation, dbt build, and data tests pass.
+   - If any Catalog Error occurs stating a table does not exist, run `execute_dbt` to materialize it first, then re-inspect.
+   - Inspect table profiling with `inspect_table_profile`.
+6. COMMIT & PULL REQUEST:
+   - Stage and commit changes using `commit_changes_to_worktree(message="feat: ...")`.
+   - Open a GitHub Pull Request using `open_pull_request(title="...", demand="...", target_model_names=[...])`.
+   - Inform the user of the created Pull Request URL with the comprehensive summary!
 """
 
     agent = Agent(

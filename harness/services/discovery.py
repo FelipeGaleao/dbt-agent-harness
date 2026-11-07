@@ -22,6 +22,19 @@ class DiscoveryService:
 
     def __init__(self, config: Optional[HarnessConfig] = None) -> None:
         self.config = config or get_config()
+        self._custom_dbt_project_dir: Optional[Path] = None
+
+    def set_project_dir(self, project_dir: Optional[Path]) -> None:
+        """Sets an alternate working directory (e.g. for an active git worktree)."""
+        self._custom_dbt_project_dir = Path(project_dir).resolve() if project_dir else None
+
+    @property
+    def current_project_dir(self) -> Path:
+        return self._custom_dbt_project_dir or self.config.dbt_project_dir
+
+    @property
+    def current_target_dir(self) -> Path:
+        return self.current_project_dir / "target"
 
     def discover_project(self) -> ProjectOverview:
         manifest_data = self._load_manifest()
@@ -121,7 +134,7 @@ class DiscoveryService:
         return entities
 
     def _load_manifest(self) -> Optional[Dict[str, Any]]:
-        manifest_path = self.config.dbt_target_dir / "manifest.json"
+        manifest_path = self.current_target_dir / "manifest.json"
         if manifest_path.exists():
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
@@ -189,7 +202,7 @@ class DiscoveryService:
         return models
 
     def _models_from_filesystem(self) -> List[ModelMetadata]:
-        models_dir = self.config.dbt_project_dir / "models"
+        models_dir = self.current_project_dir / "models"
         models: List[ModelMetadata] = []
         if not models_dir.exists():
             return models
@@ -208,7 +221,7 @@ class DiscoveryService:
 
         for sql_file in models_dir.rglob("*.sql"):
             model_name = sql_file.stem
-            rel_path = str(sql_file.relative_to(self.config.dbt_project_dir))
+            rel_path = str(sql_file.relative_to(self.current_project_dir))
             layer = self._determine_layer(rel_path, "")
 
             raw_code = sql_file.read_text(encoding="utf-8")
@@ -255,5 +268,7 @@ class DiscoveryService:
             return "staging"
         if "trusted" in p or schema == "trusted":
             return "trusted"
+        if "reports" in p or schema == "reports":
+            return "reports"
         return "custom"
 

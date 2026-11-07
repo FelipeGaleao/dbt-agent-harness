@@ -53,6 +53,13 @@ def main(argv: Optional[List[str]] = None) -> None:
     del_p.add_argument("--layer", "-l", help="Optional layer filter (trusted, staging, etc.)")
     del_p.add_argument("--yes", "-y", action="store_true", help="Confirm deletion without interactive prompt")
 
+    # pr
+    pr_p = subparsers.add_parser("pr", help="Open a GitHub Pull Request for models")
+    pr_p.add_argument("--title", "-t", required=True, help="PR title")
+    pr_p.add_argument("--demand", "-d", help="Business demand description")
+    pr_p.add_argument("--models", "-m", nargs="+", required=True, help="Target model names")
+    pr_p.add_argument("--base", default="main", help="Base target branch")
+
     # agent (ADK Runtime)
     agent_p = subparsers.add_parser("agent", help="Launch interactive session with Google ADK runtime")
     agent_p.add_argument("--session", "-s", default="adk-session-001", help="Session ID")
@@ -160,6 +167,23 @@ def main(argv: Optional[List[str]] = None) -> None:
             for c in changes:
                 print(f"  ❌ [{c['action']}] {c['path']}")
             print()
+
+    elif args.command == "pr":
+        print(f"\n🚀 Preparando Pull Request: '{args.title}' para os modelos: {', '.join(args.models)}...")
+        res = registry.execute(
+            "open_pull_request",
+            title=args.title,
+            demand=args.demand,
+            target_model_names=args.models,
+            base_branch=args.base,
+        )
+        if res.get("success"):
+            print(f"\n✅ Pull Request aberto com sucesso no GitHub!")
+            print(f"🔗 URL: {res.get('pr_url')}")
+            print(f"🌿 Branch: {res.get('branch')}\n")
+        else:
+            print(f"\n❌ Falha ao abrir Pull Request na etapa '{res.get('step')}': {res.get('error')}\n")
+            sys.exit(1)
 
     elif args.command == "agent":
         from harness.adapters.adk_runtime import ADKRuntime

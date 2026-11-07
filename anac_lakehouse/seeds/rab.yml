@@ -17,4 +17,30 @@ seeds:
         DT_VENDA: varchar
         NR_PRECO_VENDA: varchar
 
+  - name: rab_01082025
+    description: "Dados brutos do Registro Aeronáutico Brasileiro (RAB) - Snapshot 01/08/2025"
+    config:
+      schema: landing
+      delimiter: ";"
+      column_types:
+        NR_CERT_MATRICULA: varchar
+        NR_SERIE: varchar
+        NR_ANO_FABRICACAO: varchar
+        NR_PMD: varchar
+        NR_TRIPULACAO_MIN: varchar
+        NR_PASSAGEIROS_MAX: varchar
+        NR_ASSENTOS: varchar
+        DT_VALIDADE_CVA: varchar
+        DT_VALIDADE_CA: varchar
+        DT_CANC: varchar
+        DT_MATRICULA: varchar
+        CPF_CNPJ: varchar
+        CPF_CGC: varchar
+        QT_MOTOR: varchar
+        CD_MARCA_NAC1: varchar
+        CD_MARCA_NAC2: varchar
+        CD_MARCA_NAC3: varchar
+        CD_MARCA_ESTRANGEIRA: varchar
+
+
 

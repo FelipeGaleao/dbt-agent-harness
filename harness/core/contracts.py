@@ -13,6 +13,7 @@ class Layer(str, Enum):
     RAW = "raw"
     STAGING = "staging"
     TRUSTED = "trusted"
+    REPORTS = "reports"
     CUSTOM = "custom"
 
 

@@ -103,3 +103,32 @@ models:
     assert bool_check is not None
     assert bool_check.passed is True
 
+
+def test_validate_reports_reading_from_trusted_passes(guidelines_service):
+    sql_good = """
+    select * from {{ ref('dim_aeronaves') }}
+    """
+    results = guidelines_service.validate_model_compliance(
+        model_name="rep_aeronaves_ativas",
+        sql_content=sql_good,
+        layer="reports",
+    )
+    rule_9 = next((r for r in results if r.rule_id == "ECM-009"), None)
+    assert rule_9 is not None
+    assert rule_9.passed is True
+
+
+def test_validate_reports_reading_from_staging_fails(guidelines_service):
+    sql_bad = """
+    select * from {{ ref('stg_anac__rab_aeronaves') }}
+    """
+    results = guidelines_service.validate_model_compliance(
+        model_name="rep_aeronaves_ativas",
+        sql_content=sql_bad,
+        layer="reports",
+    )
+    rule_9 = next((r for r in results if r.rule_id == "ECM-009"), None)
+    assert rule_9 is not None
+    assert rule_9.passed is False
+    assert rule_9.severity == "error"
+

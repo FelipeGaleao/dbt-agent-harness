@@ -81,6 +81,13 @@ class GuidelinesService:
                 description="Trusted layer models cannot depend on other trusted models. They must read strictly from staging (stg_) or raw.",
                 severity="error",
             ),
+            GuidelineRule(
+                id="ECM-009",
+                title="Reports Layer Lineage Dependency",
+                category="Architectural Layers",
+                description="Reports layer models must strictly read from the trusted layer (dim_* or fct_*). They cannot read from staging, raw, or landing.",
+                severity="error",
+            ),
         ]
 
     def validate_model_compliance(
@@ -137,6 +144,30 @@ class GuidelinesService:
                     rule_title="Staging Layer Table Naming",
                     passed=valid_stg,
                     details=f"Model name '{model_name}' follows stg_<source>__<entity>" if valid_stg else f"Model name '{model_name}' should follow 'stg_<source>__<entity>'.",
+                    severity="error",
+                )
+            )
+
+        # Rule ECM-009: Reports layer lineage restriction (reports must strictly read from trusted)
+        if layer_lower == "reports":
+            refs = re.findall(r"ref\(\s*['\"]([^'\"]+)['\"]\s*\)", sql_content)
+            non_trusted_refs = [
+                r for r in refs
+                if not (r.startswith("dim_") or r.startswith("fct_") or r.startswith("bridge_"))
+            ]
+            valid_reports_lineage = len(refs) > 0 and len(non_trusted_refs) == 0
+            results.append(
+                ComplianceCheckResult(
+                    rule_id="ECM-009",
+                    rule_title="Reports Layer Lineage Dependency",
+                    passed=valid_reports_lineage,
+                    details=(
+                        f"Model '{model_name}' correctly consumes strictly from trusted layer models."
+                        if valid_reports_lineage
+                        else (
+                            f"Violates lineage rule: reports model '{model_name}' must read strictly from the trusted layer (dim_*, fct_*). Found invalid references: {', '.join(non_trusted_refs) if non_trusted_refs else 'no references found'}."
+                        )
+                    ),
                     severity="error",
                 )
             )

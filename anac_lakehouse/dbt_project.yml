@@ -11,7 +11,7 @@ profile: 'anac_lakehouse'
 # These configurations specify where dbt should look for different types of files.
 # The `model-paths` config, for example, states that models in this project can be
 # found in the "models/" directory. You probably won't need to change these!
-model-paths: ["models"]
+model-paths: ["models", "models/reports"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
 seed-paths: ["seeds"]
@@ -39,6 +39,9 @@ models:
       +materialized: view
     trusted:
       +schema: trusted
+      +materialized: table
+    reports:
+      +schema: reports
       +materialized: table
 
 seeds:
