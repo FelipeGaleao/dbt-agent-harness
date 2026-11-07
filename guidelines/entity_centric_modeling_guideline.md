@@ -29,12 +29,12 @@ O **ECM** inverte essa lógica: **as Entidades de Negócio (ex.: Aeronave, Propr
 
 ## 2. Estrutura de Camadas no Lakehouse com ECM
 
-| Camada | Papel | Naming Convention dbt | Granularidade |
+| Camada | Papel e Responsabilidades | Naming Convention dbt | Granularidade |
 | :--- | :--- | :--- | :--- |
-| **Landing** | Dados brutos ingeridos sem alteração (seeds/arquivos externos). | `landing_<fonte>` | Linha do arquivo original. |
+| **Landing** | Dados brutos ingeridos sem alteração técnica ou lógica (seeds/arquivos externos). | `landing_<fonte>` | Linha do arquivo original. |
 | **Raw** | Histórico/Timeline com tipagem básica e controle de auditoria (`row_hash`, `loaded_at`). | `raw.<source>__<resource>_timeline`, `..._current` | Snapshot ou evento bruto. |
-| **Staging** *(opcional)* | Limpeza leve, renomeação de colunas e casting padronizado. | `stg_<source>__<entity>` | 1:1 com a fonte limpa. |
-| **Trusted (ECM)** | **Modelagem Entity-Centric**: Tabelas consolidadas centradas nas entidades, enriquecidas com dimensões e métricas. | `trusted.dim_<entity>`, `trusted.fct_<entity>_<event>`, `trusted.<entity>_summary` | **1 linha = 1 instância da Entidade** (ou `dim_<entity>_daily`). |
+| **Staging** | **Sanitização Técnica 1:1:** Limpeza, renomeação de colunas, parsing resiliente (`try_cast`, `try_strptime`), remoção de caracteres de unidade (kg, R$) e normalização de nulos. **Não contém regras de negócio ou métricas agregadas.** | `staging.stg_<source>__<entity>` | 1:1 com a fonte raw limpa. |
+| **Trusted (ECM)** | **Modelagem Entity-Centric e Negócio:** Wide tables centradas nas entidades, features pré-calculadas (ex: idade, status consolidado, dias para vencimento), regras de negócio e flags analíticas (`is_apta_para_voo`). Consome estritamente do `staging`. | `trusted.dim_<entity>`, `trusted.fct_<entity>_<event>` | **1 linha = 1 instância da Entidade** (ou `dim_<entity>_daily`). |
 
 ---
 
@@ -82,7 +82,12 @@ Ao receber uma solicitação de modelagem ou transformação de dados, o agente 
    - `fct_<entity>_<activity>`: Tabela de fatos com eventos atrelados à entidade. Ex: `fct_aeronave_transacoes`.
    - `bridge_<entity1>_<entity2>`: Tabela de relacionamento n:m se desnormalização não for desejada. Ex: `bridge_aeronave_operadores`.
 
-2. **Convenção de Nomes de Colunas:**
+2. **Parsing Resiliente de Dados Brutos (Lições Aprendidas):**
+   - Dados de fontes governamentais ou semiestruturadas frequentemente contêm textos em campos numéricos (ex.: `'585Kg'`, `'2721,5'`, `'450 Kg'`). Nunca use `cast(... as double)` direto; use sempre extração regex limpa e `try_cast`.
+   - Valores monetários em moeda local com separador de milhar (ex.: `'200.000,00'`) exigem remoção de ponto e troca de vírgula antes de conversão numérica.
+   - Datas com múltiplos formatos e strings anômalas (ex.: `'RESRAB'`, `'ABORDO'`, `'24092027'`, `'12/05/2022'`) devem usar `coalesce` de múltiplos `try_strptime` para não quebrar a ingestão.
+
+3. **Convenção de Nomes de Colunas:**
    - **Chaves de Identificação:** `id`. Deve ter apenas o campo _id. Caso seja uma chave estrangeira, utilize `<entity da chave estrangeira>__id`. 
    - **Atributos Categóricos / Descritivos:** `ds_<atributo>`, `nm_<atributo>`, `cd_<atributo>`, `tp_<atributo>`.
    - **Indicadores / Flags Booleanas:** `is_<condicao>` ou `has_<condicao>` (ex.: `is_operacional`, `is_interditada`, `has_gravame`).
