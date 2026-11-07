@@ -116,14 +116,18 @@ class GitService:
         cwd = str(worktree_path) if worktree_path else str(self.config.project_root)
 
         # First check if a PR already exists for this branch
-        check_cmd = ["gh", "pr", "view", branch_name, "--json", "url"]
+        check_cmd = ["gh", "pr", "view", branch_name, "--json", "url,number"]
         check_res = subprocess.run(check_cmd, cwd=cwd, capture_output=True, text=True)
         if check_res.returncode == 0:
             import json
             try:
                 data = json.loads(check_res.stdout)
                 pr_url = data.get("url", "")
-                return {"url": pr_url, "status": "existing"}
+                pr_num = data.get("number")
+                # Update existing PR title and body with latest profiling and test results
+                update_cmd = ["gh", "pr", "edit", str(pr_num or branch_name), "--title", title, "--body", body]
+                subprocess.run(update_cmd, cwd=cwd, capture_output=True, text=True)
+                return {"url": pr_url, "status": "updated"}
             except Exception:
                 pass
 

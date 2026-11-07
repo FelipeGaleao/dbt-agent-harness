@@ -4,15 +4,18 @@ models:
   - name: rpt_ultimas_vendas_aeronaves
     description: "Relatório de últimas movimentações de vendas de aeronaves, incluindo detalhes do proprietário, valor da venda, UF do proprietário e informações da aeronave. Baseado nos dados mais atuais da `dim_aeronaves` (SCD2) e `dim_proprietarios`."
     columns:
-      - name: marca_aeronave
-        description: "Marcas de nacionalidade e matrícula da aeronave (Parte da Chave Primária)."
+      - name: pk_venda
+        description: "Chave primária única do relatório (MD5 de marca_aeronave e sk_proprietario)."
         tests:
-          - unique: { group_by_columns: ["sk_proprietario"] }
+          - unique
+          - not_null
+      - name: marca_aeronave
+        description: "Marcas de nacionalidade e matrícula da aeronave."
+        tests:
           - not_null
       - name: sk_proprietario
-        description: "Chave única do proprietário (CPF ou CNPJ) (Parte da Chave Primária)."
+        description: "Chave única do proprietário (CPF ou CNPJ)."
         tests:
-          - unique: { group_by_columns: ["marca_aeronave"] }
           - not_null
       - name: nm_proprietario
         description: "Nome completo ou razão social do proprietário."
