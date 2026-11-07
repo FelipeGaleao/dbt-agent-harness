@@ -1,0 +1,175 @@
+version: 2
+
+models:
+  - name: anac__rab_aeronaves_timeline
+    description: "Tabela raw de histórico/timeline dos snapshots do Registro Aeronáutico Brasileiro (RAB). Mantém o histórico de alterações das aeronaves com granularidade por snapshot e controle incremental."
+    columns:
+      - name: row_hash
+        description: "Hash MD5 gerado a partir de todos os atributos para detecção de alterações e controle de unicidade no histórico."
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Data em que o snapshot do RAB foi processado/carregado."
+        tests:
+          - not_null
+      - name: loaded_at
+        description: "Timestamp exato (data/hora com fuso horário) da ingestão do registro no banco."
+        tests:
+          - not_null
+      - name: MARCAS
+        description: "Marcas de nacionalidade e matrícula da aeronave (ex.: PTBTX, PRGOL)."
+        tests:
+          - not_null
+      - name: PROPRIETARIOS
+        description: "Lista em formato JSON com dados dos proprietários registrados (Nome, CPF/CNPJ, UF, Percentual de propriedade)."
+      - name: OPERADORES
+        description: "Lista em formato JSON com dados dos operadores da aeronave (Nome, CPF/CNPJ, UF, autorizações e regras operacionais)."
+      - name: NR_CERT_MATRICULA
+        description: "Número do Certificado de Matrícula (CM) emitido pela ANAC."
+      - name: NR_SERIE
+        description: "Número de série da aeronave atribuído pelo fabricante."
+      - name: CD_TIPO
+        description: "Código do tipo de aeronave (ex.: MNTE - Monomotor Terrestre, ANFI - Anfíbio, HELI - Helicóptero)."
+      - name: DS_MODELO
+        description: "Descrição comercial/modelo da aeronave conforme especificação de fábrica."
+      - name: NM_FABRICANTE
+        description: "Nome da empresa fabricante da aeronave (ex.: CESSNA, EMBRAER, NEIVA, BOEING)."
+      - name: CD_CLS
+        description: "Código da classe da aeronave atribuído pela ANAC (ex.: L1P - Terrestre Monomotor a Pistão)."
+      - name: NR_PMD
+        description: "Peso Máximo de Decolagem (PMD) autorizado para a aeronave, em quilogramas (kg)."
+      - name: CD_TIPO_ICAO
+        description: "Código designador do tipo de aeronave padronizado pela ICAO/OACI (ex.: C185, IPAN, B738)."
+      - name: NR_TRIPULACAO_MIN
+        description: "Número mínimo de tripulantes técnicos necessários para operar a aeronave com segurança."
+      - name: NR_PASSAGEIROS_MAX
+        description: "Capacidade máxima de passageiros transportáveis homologada para a aeronave."
+      - name: NR_ASSENTOS
+        description: "Quantidade total de assentos instalados na aeronave (tripulação + passageiros)."
+      - name: NR_ANO_FABRICACAO
+        description: "Ano de fabricação da aeronave."
+      - name: DT_VALIDADE_CVA
+        description: "Data de validade do Certificado de Verificação de Aeronavegabilidade (CVA)."
+      - name: DT_VALIDADE_CA
+        description: "Data de validade do Certificado de Aeronavegabilidade (CA) emitido pela autoridade."
+      - name: DT_CANC
+        description: "Data de cancelamento da matrícula ou registro da aeronave, quando aplicável."
+      - name: DS_MOTIVO_CANC
+        description: "Descrição do motivo do cancelamento da matrícula (ex.: PERECIMENTO, EXPORTAÇÃO, A PEDIDO)."
+      - name: CD_INTERDICAO
+        description: "Código do status de interdição da aeronave (ex.: S - Sim, N - Não, M - Matrícula Cancelada, R - Reservada)."
+      - name: DS_GRAVAME
+        description: "Descrição de eventuais ônus, restrições financeiras ou gravames vinculados à aeronave (ex.: ALIENAÇÃO FIDUCIÁRIA)."
+      - name: DT_MATRICULA
+        description: "Data de emissão da matrícula original ou data do registro junto à ANAC."
+      - name: TP_MOTOR
+        description: "Tipo de motorização instalada na aeronave (ex.: MOTOR CONVENCIONAL, TURBOELICE, TURBOFAN)."
+      - name: QT_MOTOR
+        description: "Quantidade de motores da aeronave."
+      - name: TP_POUSO
+        description: "Tipo de trem de pouso e operação de pista (ex.: POUSO CONVENCIONAL, TRICICLO, FLUTUADORES)."
+      - name: TP_CA
+        description: "Tipo de Certificado de Aeronavegabilidade expedido (ex.: CA PADRAO, ESPECIAL)."
+      - name: CD_PROPOSITO_CAVE
+        description: "Código do propósito do Certificado de Autorização de Voo Experimental (CAVE), quando aplicável."
+      - name: NM_PROPOSITO_CAVE
+        description: "Descrição do propósito da autorização de voo experimental (CAVE)."
+      - name: CF_OPERACIONAL
+        description: "Classificação da operação segundo os regulamentos aeronáuticos (ex.: RBAC 91, RBAC 135, RBAC 121)."
+      - name: DS_CATEGORIA_HOMOLOGACAO
+        description: "Categoria de homologação e aeronavegabilidade (ex.: NORMAL, RESTRITA, TRANSPORTE)."
+      - name: TP_OPERACAO
+        description: "Tipo de operação realizada pela aeronave (ex.: PRIVADO, PUBLICO, COMERCIAL, INSTRUCAO)."
+      - name: DT_VENDA
+        description: "Data informada da comunicação de venda da aeronave."
+      - name: DS_MOEDA
+        description: "Símbolo ou código da moeda declarada no valor de venda (ex.: R$, US$)."
+      - name: NR_PRECO_VENDA
+        description: "Preço ou valor declarado de venda/transferência da aeronave."
+
+  - name: anac__rab_aeronaves_current
+    description: "Tabela raw contendo a foto mais atual de cada aeronave registrada no RAB (deduplicada pela data/hora de ingestão mais recente)."
+    columns:
+      - name: MARCAS
+        description: "Marcas de nacionalidade e matrícula da aeronave. Chave primária da visão corrente."
+        tests:
+          - unique
+          - not_null
+      - name: row_hash
+        description: "Hash MD5 do estado mais recente dos dados da aeronave."
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Data do snapshot mais recente no qual a aeronave constava."
+        tests:
+          - not_null
+      - name: last_updated_at
+        description: "Timestamp da última atualização/ingestão deste registro."
+        tests:
+          - not_null
+      - name: PROPRIETARIOS
+        description: "Lista em formato JSON com dados dos proprietários registrados mais recentes."
+      - name: OPERADORES
+        description: "Lista em formato JSON com dados dos operadores registrados mais recentes."
+      - name: NR_CERT_MATRICULA
+        description: "Número do Certificado de Matrícula (CM) emitido pela ANAC."
+      - name: NR_SERIE
+        description: "Número de série da aeronave atribuído pelo fabricante."
+      - name: CD_TIPO
+        description: "Código do tipo de aeronave (ex.: MNTE, ANFI, HELI)."
+      - name: DS_MODELO
+        description: "Descrição comercial/modelo da aeronave conforme especificação de fábrica."
+      - name: NM_FABRICANTE
+        description: "Nome da empresa fabricante da aeronave (ex.: CESSNA, EMBRAER, NEIVA, BOEING)."
+      - name: CD_CLS
+        description: "Código da classe da aeronave atribuído pela ANAC (ex.: L1P)."
+      - name: NR_PMD
+        description: "Peso Máximo de Decolagem (PMD) autorizado para a aeronave, em quilogramas (kg)."
+      - name: CD_TIPO_ICAO
+        description: "Código designador do tipo de aeronave padronizado pela ICAO/OACI (ex.: C185, IPAN, B738)."
+      - name: NR_TRIPULACAO_MIN
+        description: "Número mínimo de tripulantes técnicos necessários para operar a aeronave."
+      - name: NR_PASSAGEIROS_MAX
+        description: "Capacidade máxima de passageiros transportáveis homologada para a aeronave."
+      - name: NR_ASSENTOS
+        description: "Quantidade total de assentos instalados na aeronave (tripulação + passageiros)."
+      - name: NR_ANO_FABRICACAO
+        description: "Ano de fabricação da aeronave."
+      - name: DT_VALIDADE_CVA
+        description: "Data de validade do Certificado de Verificação de Aeronavegabilidade (CVA)."
+      - name: DT_VALIDADE_CA
+        description: "Data de validade do Certificado de Aeronavegabilidade (CA) emitido pela autoridade."
+      - name: DT_CANC
+        description: "Data de cancelamento da matrícula ou registro da aeronave, quando aplicável."
+      - name: DS_MOTIVO_CANC
+        description: "Descrição do motivo do cancelamento da matrícula (ex.: PERECIMENTO, EXPORTAÇÃO)."
+      - name: CD_INTERDICAO
+        description: "Código do status de interdição da aeronave (ex.: S, N, M, R)."
+      - name: DS_GRAVAME
+        description: "Descrição de eventuais ônus, restrições financeiras ou gravames vinculados à aeronave."
+      - name: DT_MATRICULA
+        description: "Data de emissão da matrícula original ou data do registro junto à ANAC."
+      - name: TP_MOTOR
+        description: "Tipo de motorização instalada na aeronave (ex.: MOTOR CONVENCIONAL, TURBOELICE, TURBOFAN)."
+      - name: QT_MOTOR
+        description: "Quantidade de motores da aeronave."
+      - name: TP_POUSO
+        description: "Tipo de trem de pouso e operação de pista (ex.: POUSO CONVENCIONAL, TRICICLO)."
+      - name: TP_CA
+        description: "Tipo de Certificado de Aeronavegabilidade expedido (ex.: CA PADRAO, ESPECIAL)."
+      - name: CD_PROPOSITO_CAVE
+        description: "Código do propósito do Certificado de Autorização de Voo Experimental (CAVE), quando aplicável."
+      - name: NM_PROPOSITO_CAVE
+        description: "Descrição do propósito da autorização de voo experimental (CAVE)."
+      - name: CF_OPERACIONAL
+        description: "Classificação da operação segundo os regulamentos aeronáuticos (ex.: RBAC 91, RBAC 135)."
+      - name: DS_CATEGORIA_HOMOLOGACAO
+        description: "Categoria de homologação e aeronavegabilidade (ex.: NORMAL, RESTRITA)."
+      - name: TP_OPERACAO
+        description: "Tipo de operação realizada pela aeronave (ex.: PRIVADO, PUBLICO, COMERCIAL)."
+      - name: DT_VENDA
+        description: "Data informada da comunicação de venda da aeronave."
+      - name: DS_MOEDA
+        description: "Símbolo ou código da moeda declarada no valor de venda (ex.: R$, US$)."
+      - name: NR_PRECO_VENDA
+        description: "Preço ou valor declarado de venda/transferência da aeronave."

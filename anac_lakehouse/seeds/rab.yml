@@ -1,0 +1,20 @@
+version: 2
+
+seeds:
+  - name: rab_07112026
+    description: "Dados brutos do Registro Aeronáutico Brasileiro (RAB)"
+    config:
+      schema: landing
+      delimiter: ";"
+      column_types:
+        NR_CERT_MATRICULA: varchar
+        NR_SERIE: varchar
+        NR_ANO_FABRICACAO: varchar
+        DT_VALIDADE_CVA: varchar
+        DT_VALIDADE_CA: varchar
+        DT_CANC: varchar
+        DT_MATRICULA: varchar
+        DT_VENDA: varchar
+        NR_PRECO_VENDA: varchar
+
+

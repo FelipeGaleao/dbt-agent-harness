@@ -1,0 +1,8 @@
+anac_lakehouse:
+  outputs:
+    dev:
+      type: duckdb
+      path: ../databases/anac_lakehouse.db
+      threads: 5
+
+  target: dev
