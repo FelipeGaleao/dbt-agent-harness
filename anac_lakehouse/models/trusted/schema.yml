@@ -168,3 +168,47 @@ models:
 
       - name: last_updated_at
         description: "Timestamp da última atualização/ingestão no lakehouse."
+
+  - name: dim_aeroportos
+    description: >
+      Tabela dimensão ampla (Wide Entity Table) sob o paradigma Entity-Centric Data Modeling (ECM).
+      Representa a visão corrente e consolidada de cada Aeroporto (1 linha por id_aeroporto),
+      integrando dados cadastrais, localização e características operacionais.
+    columns:
+      - name: id_aeroporto
+        description: "Código ICAO do aeroporto (Chave Primária natural da entidade). Ex.: SBAA, SBGR."
+        tests:
+          - unique
+          - not_null
+
+      - name: nm_aeroporto
+        description: "Nome oficial do aeroporto."
+
+      - name: nm_municipio
+        description: "Nome do município atendido pelo aeroporto."
+
+      - name: cd_uf
+        description: "Código da Unidade Federativa (Estado) onde o aeroporto está localizado."
+
+      - name: latitude
+        description: "Latitude do aeroporto em formato descritivo."
+
+      - name: longitude
+        description: "Longitude do aeroporto em formato descritivo."
+
+      - name: altitude_m
+        description: "Altitude do aeroporto acima do nível do mar, em metros."
+
+      - name: ds_operacao
+        description: "Descrição do tipo de operação permitida no aeroporto (ex.: VFR Diurno/Noturno e IFR Diurno)."
+
+      - name: ds_situacao
+        description: "Situação atual do aeroporto (ex.: ATIVO, INATIVO)."
+
+      - name: is_situado_amazonia_legal
+        description: "Flag booleana indicando se o aeroporto está situado na Amazônia Legal."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
