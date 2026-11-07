@@ -24,8 +24,14 @@ class WorkspaceManager:
         self.allowed_base_dir = base_dir.resolve()
 
     def _validate_path(self, relative_path: str) -> Path:
-        """Ensures target path is strictly within the allowed models directory."""
+        """Ensures target path is within the allowed dbt project (models directory or project config)."""
         clean_rel = relative_path.strip().lstrip("/")
+        if clean_rel in ("dbt_project.yml", "dbt_project.yaml"):
+            # Allow reading the dbt_project.yml located at project level
+            proj_file = (self.allowed_base_dir.parent / clean_rel).resolve()
+            if proj_file.exists():
+                return proj_file
+
         if clean_rel.startswith("models/"):
             clean_rel = clean_rel[len("models/"):]
         target_path = (self.allowed_base_dir / clean_rel).resolve()
@@ -38,11 +44,37 @@ class WorkspaceManager:
         return target_path
 
     def read_model_file(self, relative_path: str) -> str:
-        """Reads a file within the allowed models directory."""
+        """Reads a file within the allowed models directory (or dbt_project.yml)."""
+        clean_rel = relative_path.strip().lstrip("/")
+        if clean_rel in ("dbt_project.yml", "dbt_project.yaml"):
+            proj_file = (self.allowed_base_dir.parent / clean_rel).resolve()
+            if proj_file.exists():
+                return proj_file.read_text(encoding="utf-8")
+
         target_path = self._validate_path(relative_path)
         if not target_path.exists():
             raise FileNotFoundError(f"Model file not found: {relative_path}")
         return target_path.read_text(encoding="utf-8")
+
+    def list_files(self, subfolder: Optional[str] = None) -> List[str]:
+        """Lists existing relative file paths within the allowed directory (e.g. 'reports', 'trusted')."""
+        target_dir = self.allowed_base_dir
+        if subfolder:
+            clean_sub = subfolder.strip().lstrip("/")
+            if clean_sub.startswith("models/"):
+                clean_sub = clean_sub[len("models/"):]
+            target_dir = (self.allowed_base_dir / clean_sub).resolve()
+            if not target_dir.exists():
+                return []
+        files = []
+        for p in target_dir.rglob("*"):
+            if p.is_file() and not p.name.startswith("."):
+                try:
+                    rel = str(p.relative_to(self.allowed_base_dir))
+                    files.append(rel)
+                except ValueError:
+                    pass
+        return sorted(files)
 
     def propose_diff(self, relative_path: str, new_content: str) -> str:
         """Computes a unified diff between current file content and proposed content."""

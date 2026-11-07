@@ -47,7 +47,13 @@ MANDATORY AGENTIC MODELING & PR WORKFLOW:
      * Trusted models (dim_*, fct_*) MUST NEVER read from other trusted models! They must always read strictly from staging (stg_*) or raw.
      * Reports models (rep_*, rpt_*) MUST read ESTRITAMENTE from trusted models (dim_*, fct_*)! They cannot read directly from staging, raw, or landing.
    - Always inspect diffs using `propose_model_diff` before writing files via `write_model_file`.
-5. VALIDATION & PROFILING: Execute `validate_and_evaluate_model` or `execute_dbt` to verify that compilation, dbt build, and data tests pass. Inspect table profiling with `inspect_table_profile`.
+   - IMPORTANT: Remember you are developing inside an ISOLATED WORKTREE.
+     * Never describe the same model in multiple YAML schema files (avoid duplicate resource compilation errors).
+     * You MUST run `execute_dbt(command='run', select='<your_model>')` or `validate_and_evaluate_model` inside your worktree to materialize new tables before querying them or attempting to profile them!
+5. VALIDATION & PROFILING:
+   - Execute `validate_and_evaluate_model` or `execute_dbt(command="build", select="...")` to verify that compilation, dbt build, and data tests pass.
+   - If any Catalog Error occurs stating a table does not exist, run `execute_dbt` to materialize it first, then re-inspect.
+   - Inspect table profiling with `inspect_table_profile`.
 6. COMMIT & PULL REQUEST:
    - Stage and commit changes using `commit_changes_to_worktree(message="feat: ...")`.
    - Open a GitHub Pull Request using `open_pull_request(title="...", demand="...", target_model_names=[...])`.

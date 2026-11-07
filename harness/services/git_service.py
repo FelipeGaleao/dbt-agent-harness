@@ -42,15 +42,21 @@ class GitService:
             else:
                 raise RuntimeError(f"Failed to create git worktree: {res.stderr}")
 
-        # Ensure database link/directory exists inside worktree so dbt finds databases/anac_lakehouse.db
+        # Ensure database link exists inside worktree pointing directly to root database so all changes persist
         worktree_db_dir = worktree_path / "databases"
         if not worktree_db_dir.exists():
             root_db_dir = self.config.project_root / "databases"
             if root_db_dir.exists():
                 try:
-                    os.symlink(str(root_db_dir), str(worktree_db_dir))
+                    os.symlink(str(root_db_dir.resolve()), str(worktree_db_dir), target_is_directory=True)
                 except OSError:
-                    shutil.copytree(str(root_db_dir), str(worktree_db_dir))
+                    worktree_db_dir.mkdir(parents=True, exist_ok=True)
+                    root_db_file = root_db_dir / "anac_lakehouse.db"
+                    if root_db_file.exists():
+                        try:
+                            os.symlink(str(root_db_file.resolve()), str(worktree_db_dir / "anac_lakehouse.db"))
+                        except OSError:
+                            shutil.copy2(str(root_db_file), str(worktree_db_dir / "anac_lakehouse.db"))
 
         return worktree_path
 

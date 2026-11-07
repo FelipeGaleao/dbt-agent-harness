@@ -42,6 +42,21 @@ def build_harness_tool_registry(
     active_worktree_path: Optional[str] = None
     active_branch_name: Optional[str] = None
 
+    # Check if a worktree already exists on disk for this session
+    if session_id:
+        sess_wt = cfg.project_root / ".worktrees" / session_id
+        if sess_wt.exists():
+            import subprocess
+            res_b = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True, cwd=str(sess_wt))
+            b_current = res_b.stdout.strip()
+            if b_current and b_current != "main":
+                active_worktree_path = str(sess_wt)
+                active_branch_name = b_current
+                # Auto-point services to this existing session worktree
+                workspace.set_base_dir(sess_wt / "anac_lakehouse" / "models")
+                dbt_runner.set_project_dir(sess_wt / "anac_lakehouse")
+                discovery.set_project_dir(sess_wt / "anac_lakehouse")
+
     registry = ToolRegistry()
 
     # 1. Project Discovery Tools
@@ -84,9 +99,16 @@ def build_harness_tool_registry(
         return [r.model_dump() for r in results]
 
     # 3. Workspace Management Tools
+    def list_workspace_files(subfolder: Optional[str] = None) -> List[str]:
+        """List files in the models directory (or a specific layer/subfolder, e.g. 'reports', 'trusted')."""
+        return workspace.list_files(subfolder=subfolder)
+
     def read_model_file(relative_path: str) -> str:
-        """Read existing SQL or YAML model file from models/ directory."""
-        return workspace.read_model_file(relative_path)
+        """Read existing SQL or YAML model file from models/ directory or project root."""
+        try:
+            return workspace.read_model_file(relative_path)
+        except Exception as e:
+            return f"Error reading file '{relative_path}': {str(e)}"
 
     def propose_model_diff(relative_path: str, new_content: str) -> str:
         """Inspect unified diff between current file content and proposed changes before applying."""
@@ -142,15 +164,50 @@ def build_harness_tool_registry(
         select: Optional[str] = None,
         timeout_seconds: float = 60.0,
     ) -> Dict[str, Any]:
-        """Execute a controlled dbt command (compile, run, test, build) with structured results."""
-        res = dbt_runner.execute(command=command, select=select, timeout_seconds=timeout_seconds)
-        return res.model_dump()
+        """Execute a controlled dbt command (compile, run, test, build, seed) with structured results."""
+        try:
+            res = dbt_runner.execute(command=command, select=select, timeout_seconds=timeout_seconds)
+            return res.model_dump()
+        except ValueError as e:
+            return {
+                "success": False,
+                "command": command,
+                "error": str(e),
+                "suggestion": (
+                    f"A tool 'execute_dbt' aceita exclusivamente subcomandos do dbt: {sorted(list(dbt_runner.ALLOWED_COMMANDS))}. "
+                    "Para listar arquivos ou modelos no projeto, use a tool 'list_models(layer=...)' ou 'list_workspace_files()'."
+                ),
+                "exit_code": 1,
+                "stdout": "",
+                "stderr": str(e),
+                "duration_seconds": 0.0,
+                "models_affected": [],
+                "failures": [],
+            }
 
     # 5. DuckDB Inspection Tools
     def query_database(sql: str, limit: int = 50) -> Dict[str, Any]:
         """Execute a read-only bounded SQL query against DuckDB for data inspection."""
-        res = duckdb_inspector.execute_query(sql=sql, limit=limit)
-        return res.model_dump()
+        try:
+            res = duckdb_inspector.execute_query(sql=sql, limit=limit)
+            return res.model_dump()
+        except Exception as e:
+            err_msg = str(e)
+            suggestion = ""
+            if "Catalog Error" in err_msg or "does not exist" in err_msg:
+                suggestion = (
+                    "A tabela consultada não foi encontrada no catálogo DuckDB. "
+                    "Se você estiver desenvolvendo em uma worktree isolada, certifique-se de executar "
+                    "`execute_dbt(command='run', select='<model_name>')` para materializar a tabela antes de consultá-la."
+                )
+            return {
+                "error": err_msg,
+                "suggestion": suggestion,
+                "columns": [],
+                "rows": [],
+                "row_count": 0,
+                "execution_time_seconds": 0.0,
+            }
 
     def inspect_table_profile(table_name: str, schema_name: Optional[str] = None) -> Dict[str, Any]:
         """Inspect table schema, row count, null rates, and preview sample rows."""
@@ -296,6 +353,11 @@ def build_harness_tool_registry(
             models_in_worktree = wt_path / "anac_lakehouse" / "models"
             workspace.set_base_dir(models_in_worktree)
 
+            # Update dbt runner and discovery to use the worktree directory
+            dbt_project_in_worktree = wt_path / "anac_lakehouse"
+            dbt_runner.set_project_dir(dbt_project_in_worktree)
+            discovery.set_project_dir(dbt_project_in_worktree)
+
             return {
                 "success": True,
                 "worktree_path": str(wt_path),
@@ -342,6 +404,30 @@ def build_harness_tool_registry(
 
         wt_path = Path(active_worktree_path) if active_worktree_path else cfg.project_root
 
+        # Ensure we don't try to PR main -> main
+        if branch == base_branch or branch == "main":
+            # Attempt to discover active feature branch from session worktrees
+            worktrees_dir = cfg.project_root / ".worktrees"
+            if worktrees_dir.exists():
+                import subprocess
+                for sub in worktrees_dir.iterdir():
+                    if sub.is_dir():
+                        res = subprocess.run(["git", "branch", "--show-current"], cwd=str(sub), capture_output=True, text=True)
+                        cand = res.stdout.strip()
+                        if cand and cand != base_branch and cand != "main":
+                            branch = cand
+                            active_branch_name = cand
+                            active_worktree_path = str(sub)
+                            wt_path = sub
+                            break
+
+        if branch == base_branch or branch == "main":
+            return {
+                "success": False,
+                "step": "validation",
+                "error": f"Cannot create PR from branch '{branch}' to base '{base_branch}'. Please ensure an isolated feature branch was created with 'create_isolated_worktree'."
+            }
+
         # 1. Push branch
         try:
             git_service.push_branch(branch_name=branch, worktree_path=wt_path)
@@ -366,22 +452,33 @@ def build_harness_tool_registry(
             val_reports.append(v_rep)
 
             # Profile data
-            schema_name = layer if layer in ("landing", "raw", "staging", "trusted") else "trusted"
-            row_count = duckdb_inspector.get_row_count(m_name, schema=schema_name)
-            pk = det.columns.keys() if det else []
-            first_pk = next((k for k, col in det.columns.items() if "unique" in col.tests), "id") if det else "id"
-            pk_check = duckdb_inspector.check_primary_key_uniqueness(m_name, first_pk, schema=schema_name)
-            null_rates = duckdb_inspector.inspect_null_rates(m_name, schema=schema_name)
-            preview = duckdb_inspector.preview_table(m_name, schema=schema_name, limit=3)
+            schema_name = layer if layer in ("landing", "raw", "staging", "trusted", "reports") else "trusted"
+            try:
+                row_count = duckdb_inspector.get_row_count(m_name, schema=schema_name)
+                pk = det.columns.keys() if det else []
+                first_pk = next((k for k, col in det.columns.items() if "unique" in col.tests), "id") if det else "id"
+                pk_check = duckdb_inspector.check_primary_key_uniqueness(m_name, first_pk, schema=schema_name)
+                null_rates = duckdb_inspector.inspect_null_rates(m_name, schema=schema_name)
+                preview = duckdb_inspector.preview_table(m_name, schema=schema_name, limit=3)
 
-            profiling_dict[f"{schema_name}.{m_name}"] = {
-                "row_count": row_count,
-                "primary_key": first_pk,
-                "is_unique": pk_check.get("is_unique", True),
-                "null_rates": null_rates,
-                "preview_columns": preview.columns,
-                "preview_sample_rows": preview.rows,
-            }
+                profiling_dict[f"{schema_name}.{m_name}"] = {
+                    "row_count": row_count,
+                    "primary_key": first_pk,
+                    "is_unique": pk_check.get("is_unique", True),
+                    "null_rates": null_rates,
+                    "preview_columns": preview.columns,
+                    "preview_sample_rows": preview.rows,
+                }
+            except Exception as e:
+                profiling_dict[f"{schema_name}.{m_name}"] = {
+                    "row_count": -1,
+                    "primary_key": "n/a",
+                    "is_unique": False,
+                    "null_rates": {},
+                    "preview_columns": [],
+                    "preview_sample_rows": [],
+                    "note": f"Não materializado ou erro de leitura: {str(e)}",
+                }
 
             plan_models_meta.append({
                 "model_name": m_name,
@@ -415,6 +512,9 @@ def build_harness_tool_registry(
             if active_worktree_path:
                 try:
                     git_service.cleanup_worktree(Path(active_worktree_path), force=True)
+                    # Reset dbt runner and discovery project dir
+                    dbt_runner.set_project_dir(None)
+                    discovery.set_project_dir(None)
                     # Reset workspace path to root models
                     workspace.set_base_dir(cfg.dbt_project_dir / "models")
                 except Exception:
@@ -437,6 +537,7 @@ def build_harness_tool_registry(
     registry.register("get_entity_definitions", "Discover existing ECM entity definitions", get_entity_definitions)
     registry.register("get_guidelines", "Read full Entity-Centric Data Modeling guidelines", get_guidelines)
     registry.register("check_guidelines_compliance", "Deterministic guideline policy check on SQL/YAML", check_guidelines_compliance)
+    registry.register("list_workspace_files", "List files in the models directory or a specific layer (e.g. 'reports')", list_workspace_files)
     registry.register("read_model_file", "Read model SQL or YAML from models/ directory", read_model_file)
     registry.register("propose_model_diff", "Inspect unified diff of proposed changes", propose_model_diff)
     registry.register("write_model_file", "Safely create or update a model file in models/", write_model_file)
