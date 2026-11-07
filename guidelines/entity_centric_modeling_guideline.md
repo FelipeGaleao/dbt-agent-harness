@@ -35,6 +35,7 @@ O **ECM** inverte essa lógica: **as Entidades de Negócio (ex.: Aeronave, Propr
 | **Raw** | Histórico/Timeline com tipagem básica e controle de auditoria (`row_hash`, `loaded_at`). | `raw.<source>__<resource>_timeline`, `..._current` | Snapshot ou evento bruto. |
 | **Staging** | **Sanitização Técnica 1:1:** Limpeza, renomeação de colunas, parsing resiliente (`try_cast`, `try_strptime`), remoção de caracteres de unidade (kg, R$) e normalização de nulos. **Não contém regras de negócio ou métricas agregadas.** | `staging.stg_<source>__<entity>` | 1:1 com a fonte raw limpa. |
 | **Trusted (ECM)** | **Modelagem Entity-Centric e Negócio:** Wide tables centradas nas entidades, features pré-calculadas (ex: idade, status consolidado, dias para vencimento), regras de negócio e flags analíticas (`is_apta_para_voo`). **Linhagem Estrita: Modelos trusted NUNCA devem ler de outros modelos trusted. Devem consumir estritamente da camada staging (ou raw quando justificado).** | `trusted.dim_<entity>`, `trusted.fct_<entity>_<event>` | **1 linha = 1 instância da Entidade** (ou `dim_<entity>_daily`). |
+| **Reports** | **Camada de Consumo e Visualização:** Modelos agregados, relatórios específicos, dashboards, cubos ou KPIs voltados para consumo direto por ferramentas de BI e usuários de negócio. **Linhagem Estrita: Modelos da camada reports NUNCA devem ler de landing, raw ou staging. Devem consumir ESTRITAMENTE de modelos da camada trusted (`dim_*` ou `fct_*`).** | `reports.rep_<tema>`, `reports.rpt_<tema>`, `reports.<relatorio>` | Granularidade específica do relatório/dashboard (ex.: agregado mensal, por UF, etc.). |
 
 ---
 
@@ -126,4 +127,9 @@ Antes de finalizar qualquer modelo na camada `trusted`, o agente deve validar:
 - [ ] Métricas temporais (idades, dias decorridos, dias até vencimento) foram pré-computadas?
 - [ ] A documentação no `schema.yml` descreve as regras de negócio utilizadas nas métricas calculadas?
 - [ ] **Regra de Linhagem da Camada Trusted:** O modelo NUNCA referencia outro modelo da camada `trusted` (`ref('dim_...')` ou `ref('fct_...')`). Todas as referências da camada `trusted` devem vir estritamente de `staging` (`stg_...`) ou `raw`.
+
+Antes de finalizar qualquer modelo na camada `reports`, o agente deve validar:
+- [ ] **Regra de Linhagem da Camada Reports:** O modelo consome **ESTRITAMENTE da camada `trusted`** (`ref('dim_...')` ou `ref('fct_...')`). É estritamente proibido referenciar diretamente `staging`, `raw` ou seeds na camada `reports`.
+- [ ] O modelo possui prefixo semântico de relatório (ex.: `rep_*`, `rpt_*`).
+- [ ] A agregação de negócio e métricas estão documentadas no `schema.yml`.
 

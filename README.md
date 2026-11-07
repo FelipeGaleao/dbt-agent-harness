@@ -146,6 +146,14 @@ Remova os arquivos SQL e YAML de um modelo com suporte a histórico e rollback:
 harness delete dim_fabricantes_aeronaves --layer trusted
 ```
 
+### Abrir Pull Request no GitHub com Profiling e Testes
+Abra um Pull Request padronizado com testes do dbt, tabela markdown de entidades e métricas de profiling:
+```bash
+harness pr --title "feat: adiciona dimensao de aeroportos" \
+           --demand "Criar dimensao analitica wide para aerodromos publicos da ANAC" \
+           --models dim_aeroportos
+```
+
 ### Consultar o Banco com Segurança (Somente Leitura)
 ```bash
 harness query "SELECT marca_aeronave, nm_fabricante, ds_modelo, is_apta_para_voo FROM trusted.dim_aeronaves LIMIT 5"
@@ -373,6 +381,14 @@ harness agent --session minha-sessao-001 --message "Descubra os modelos existent
 Remova os arquivos SQL e YAML de um modelo com suporte a histórico e rollback:
 ```bash
 harness delete dim_fabricantes_aeronaves --layer trusted
+```
+
+### Abrir Pull Request no GitHub com Profiling e Testes
+Abra um Pull Request padronizado com testes do dbt, tabela markdown de entidades e métricas de profiling:
+```bash
+harness pr --title "feat: adiciona dimensao de aeroportos" \
+           --demand "Criar dimensao analitica wide para aerodromos publicos da ANAC" \
+           --models dim_aeroportos
 ```
 
 ### Consultar o Banco com Segurança (Somente Leitura)

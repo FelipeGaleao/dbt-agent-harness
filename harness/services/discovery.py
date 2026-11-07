@@ -255,5 +255,7 @@ class DiscoveryService:
             return "staging"
         if "trusted" in p or schema == "trusted":
             return "trusted"
+        if "reports" in p or schema == "reports":
+            return "reports"
         return "custom"
 

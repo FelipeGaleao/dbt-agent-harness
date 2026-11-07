@@ -13,11 +13,15 @@ from harness.core.contracts import WorkspaceFileChange
 class WorkspaceManager:
     """Safely manages model files with boundary enforcement, diff inspection, and reversions."""
 
-    def __init__(self, config: Optional[HarnessConfig] = None) -> None:
+    def __init__(self, config: Optional[HarnessConfig] = None, base_dir: Optional[Path] = None) -> None:
         self.config = config or get_config()
-        self.allowed_base_dir = (self.config.dbt_project_dir / "models").resolve()
+        self.allowed_base_dir = (base_dir or (self.config.dbt_project_dir / "models")).resolve()
         # Track history of file modifications in-memory or for session: {path: [previous_contents]}
         self._history: Dict[str, List[Optional[str]]] = {}
+
+    def set_base_dir(self, base_dir: Path) -> None:
+        """Dynamically re-points the workspace to an isolated worktree directory."""
+        self.allowed_base_dir = base_dir.resolve()
 
     def _validate_path(self, relative_path: str) -> Path:
         """Ensures target path is strictly within the allowed models directory."""

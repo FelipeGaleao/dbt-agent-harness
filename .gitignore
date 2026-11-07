@@ -4,4 +4,5 @@ logs/dbt.log
 *.egg-info
 .pytest_cache/
 .harness/
+.worktrees/
 .env
