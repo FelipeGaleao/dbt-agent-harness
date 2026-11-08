@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: rpt_ultimas_vendas_aeronaves
+    description: "Relatório de últimas movimentações de vendas de aeronaves, incluindo detalhes do proprietário, valor da venda, UF do proprietário e informações da aeronave. Baseado nos dados mais atuais da `dim_aeronaves` (SCD2) e `dim_proprietarios`."
+    columns:
+      - name: pk_venda
+        description: "Chave primária única do relatório (MD5 de marca_aeronave e sk_proprietario)."
+        tests:
+          - unique
+          - not_null
+      - name: marca_aeronave
+        description: "Marcas de nacionalidade e matrícula da aeronave."
+        tests:
+          - not_null
+      - name: sk_proprietario
+        description: "Chave única do proprietário (CPF ou CNPJ)."
+        tests:
+          - not_null
+      - name: nm_proprietario
+        description: "Nome completo ou razão social do proprietário."
+        tests:
+          - not_null
+      - name: cd_uf_proprietario
+        description: "Código da Unidade Federativa (UF) do proprietário."
+        tests:
+          - not_null
+      - name: dt_venda
+        description: "Data da última venda registrada da aeronave."
+        tests:
+          - not_null
+      - name: vl_preco_venda
+        description: "Preço declarado da aeronave na última transação."
+      - name: cd_moeda_venda
+        description: "Moeda do valor de venda."
+      - name: ds_modelo_aeronave
+        description: "Modelo comercial homologado da aeronave."
+      - name: nm_fabricante_aeronave
+        description: "Nome padronizado do fabricante da aeronave."
+      - name: ano_fabricacao_aeronave
+        description: "Ano civil de fabricação da aeronave."
+      - name: idade_aeronave_anos
+        description: "Idade atual da aeronave em anos."
+      - name: is_matricula_cancelada
+        description: "Flag booleana: TRUE se a matrícula foi cancelada."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: is_apta_para_voo
+        description: "Health status: TRUE se a aeronave está apta para voo."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
+      - name: is_ultima_venda
+        description: "Flag: TRUE se este registro representa a última venda conhecida para a aeronave no estado atual."
+        tests:
+          - not_null
+          - accepted_values: { values: [true, false] }
