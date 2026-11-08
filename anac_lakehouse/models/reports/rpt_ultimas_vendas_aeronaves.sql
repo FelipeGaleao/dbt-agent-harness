@@ -67,7 +67,9 @@ cleaned_and_joined AS (
       AND (LENGTH(REPLACE(REGEXP_REPLACE(pe.nr_cpf_cnpj_proprietario, '[^0-9]', ''), '"', '')) = 11 OR LENGTH(REPLACE(REGEXP_REPLACE(pe.nr_cpf_cnpj_proprietario, '[^0-9]', ''), '"', '')) = 14)
 )
 
-SELECT
+SELECT DISTINCT
+    -- Chave Primária Única (MD5 de marca_aeronave + sk_proprietario + nome do proprietário)
+    MD5(marca_aeronave || '_' || sk_proprietario || '_' || COALESCE(nm_proprietario, nm_proprietario_temp)) AS pk_venda,
     marca_aeronave,
     sk_proprietario,
     COALESCE(nm_proprietario, nm_proprietario_temp) AS nm_proprietario,
