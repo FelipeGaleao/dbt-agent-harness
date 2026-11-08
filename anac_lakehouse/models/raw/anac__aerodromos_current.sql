@@ -4,7 +4,7 @@
 ) }}
 
 with timeline as (
-    select * from {{ ref('raw_aerodromos_timeline') }}
+    select * from {{ ref('anac__aerodromos_timeline') }}
 ),
 
 ranked as (

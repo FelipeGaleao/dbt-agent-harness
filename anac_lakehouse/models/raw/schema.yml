@@ -173,3 +173,256 @@ models:
         description: "Símbolo ou código da moeda declarada no valor de venda (ex.: R$, US$)."
       - name: NR_PRECO_VENDA
         description: "Preço ou valor declarado de venda/transferência da aeronave."
+  - name: anac__aerodromos_timeline
+    description: "Tabela raw de histórico/timeline dos aeródromos civis públicos da ANAC. Mantém o histórico de alterações dos aeródromos com granularidade por snapshot e controle incremental."
+    columns:
+      - name: aerodrome_hash
+        description: "Hash MD5 gerado a partir de todos os atributos para detecção de alterações e controle de unicidade no histórico."
+        tests:
+          - unique
+          - not_null
+      - name: snapshot_date
+        description: "Data em que o snapshot dos dados do aeródromo foi processado/carregado."
+        tests:
+          - not_null
+      - name: loaded_at
+        description: "Timestamp exato (data/hora com fuso horário) da ingestão do registro no banco."
+        tests:
+          - not_null
+      - name: OACI
+        description: "Código OACI (Organização da Aviação Civil Internacional) do aeródromo."
+        tests:
+          - not_null
+      - name: CODIGO_OACI
+        description: "Código OACI do aeródromo, pode ser redundante ou uma variação."
+      - name: CIAD
+        description: "Código CIAD do aeródromo, se aplicável."
+      - name: NOME
+        description: "Nome oficial do aeródromo."
+      - name: MUNICIPIO_ATENDIDO
+        description: "Município onde o aeródromo está localizado ou atende."
+      - name: UF
+        description: "Unidade Federativa (estado) do aeródromo."
+      - name: LATITUDE
+        description: "Coordenada de latitude do aeródromo em formato de texto."
+      - name: LONGITUDE
+        description: "Coordenada de longitude do aeródromo em formato de texto."
+      - name: ALTITUDE
+        description: "Altitude do aeródromo em formato de texto."
+      - name: OPERACAO
+        description: "Tipo de operação do aeródromo (e.g., CIVIL, MILITAR, MISTA)."
+      - name: AIP_BRASIL
+        description: "Informações do AIP Brasil relacionadas ao aeródromo."
+      - name: DESIGNACAO
+        description: "Designação da pista principal."
+      - name: COMPRIMENTO
+        description: "Comprimento da pista principal."
+      - name: LARGURA
+        description: "Largura da pista principal."
+      - name: RESISTENCIA
+        description: "Resistência da pista principal."
+      - name: SUPERFICIE
+        description: "Tipo de superfície da pista principal."
+      - name: DESIGNACAO_2
+        description: "Designação da segunda pista (se houver)."
+      - name: COMPRIMENTO_2
+        description: "Comprimento da segunda pista (se houver)."
+      - name: LARGURA_2
+        description: "Largura da segunda pista (se houver)."
+      - name: RESISTENCIA_2
+        description: "Resistência da segunda pista (se houver)."
+      - name: SUPERFICIE_2
+        description: "Tipo de superfície da segunda pista (se houver)."
+      - name: DESIGNACAO_3
+        description: "Designação da terceira pista (se houver)."
+      - name: COMPRIMENTO_3
+        description: "Comprimento da terceira pista (se houver)."
+      - name: LARGURA_3
+        description: "Largura da terceira pista (se houver)."
+      - name: RESISTENCIA_3
+        description: "Resistência da terceira pista (se houver)."
+      - name: SUPERFICIE_3
+        description: "Tipo de superfície da terceira pista (se houver)."
+      - name: RAMPAS_DE_APROXIMACAO
+        description: "Informações sobre rampas de aproximação."
+      - name: FORMATO_DA_AREA_DE_POUSO
+        description: "Formato da área de pouso."
+      - name: DIMENSOES
+        description: "Dimensões da área de pouso."
+      - name: RESISTENCIA_4
+        description: "Resistência da área de pouso."
+      - name: SUPERFICIE_4
+        description: "Tipo de superfície da área de pouso."
+      - name: P1
+        description: "Campo genérico P1."
+      - name: P2
+        description: "Campo genérico P2."
+      - name: P3
+        description: "Campo genérico P3."
+      - name: P4
+        description: "Campo genérico P4."
+      - name: PORTARIAS
+        description: "Informações sobre portarias aplicáveis."
+      - name: COLUNA_36
+        description: "Coluna genérica 36 (a ser investigada/renomeada em staging)."
+      - name: COLUNA_37
+        description: "Coluna genérica 37 (a ser investigada/renomeada em staging)."
+      - name: COLUNA_38
+        description: "Coluna genérica 38 (a ser investigada/renomeada em staging)."
+      - name: PORTARIA_N_189672026_E_ALTERACOES
+        description: "Informações da Portaria Nº 18967/2026 e alterações."
+      - name: PORTARIA_N_173882025_A_CLASSE_I_SE_DIVIDE_AINDA_EM_RBAC_121_RBAC_135_REGULAR_E_OUTRAS_OPERACOES
+        description: "Informações da Portaria Nº 17388/2025 sobre classes de operação."
+      - name: PORTARIA_N_20072014_E_ALTERACOES_=_REGIME_TARIFARIO_DIFERENCIADO
+        description: "Informações da Portaria Nº 2007/2014 sobre regime tarifário diferenciado."
+      - name: AERONAVE_CRITICA
+        description: "Indicador se o aeródromo possui restrições para aeronaves críticas."
+      - name: TIPO_DE_APROX_CABECEIRAS
+        description: "Tipo de aproximação para as cabeceiras."
+      - name: CAT_SESCINC
+        description: "Categoria de Serviço de Salvamento e Combate a Incêndio (SESCINC)."
+      - name: R1
+        description: "Campo genérico R1."
+      - name: R2
+        description: "Campo genérico R2."
+      - name: REFERENCIAS
+        description: "Referências adicionais."
+      - name: RESTRICAOOES
+        description: "Restrições operacionais do aeródromo."
+      - name: SITUACAO
+        description: "Situação atual do aeródromo (e.g., ATIVO, INATIVO)."
+      - name: R1_2
+        description: "Campo genérico R1_2."
+      - name: REFERENCIA
+        description: "Referência adicional."
+      - name: SITUADO_NA_AMAZONIA_LEGAL
+        description: "Indicador se o aeródromo está situado na Amazônia Legal."
+      - name: OBSERVACOES
+        description: "Observações gerais sobre o aeródromo."
+
+  - name: anac__aerodromos_current
+    description: "Tabela raw contendo a foto mais atual de cada aeródromo civil público da ANAC (deduplicada pela data/hora de ingestão mais recente)."
+    columns:
+      - name: OACI
+        description: "Código OACI (Organização da Aviação Civil Internacional) do aeródromo. Chave primária da visão corrente."
+        tests:
+          - unique
+          - not_null
+      - name: aerodrome_hash
+        description: "Hash MD5 do estado mais recente dos dados do aeródromo."
+        tests:
+          - not_null
+      - name: snapshot_date
+        description: "Data do snapshot mais recente no qual o aeródromo constava."
+        tests:
+          - not_null
+      - name: last_updated_at
+        description: "Timestamp da última atualização/ingestão deste registro."
+        tests:
+          - not_null
+      - name: CODIGO_OACI
+        description: "Código OACI do aeródromo, pode ser redundante ou uma variação."
+      - name: CIAD
+        description: "Código CIAD do aeródromo, se aplicável."
+      - name: NOME
+        description: "Nome oficial do aeródromo."
+      - name: MUNICIPIO_ATENDIDO
+        description: "Município onde o aeródromo está localizado ou atende."
+      - name: UF
+        description: "Unidade Federativa (estado) do aeródromo."
+      - name: LATITUDE
+        description: "Coordenada de latitude do aeródromo em formato de texto."
+      - name: LONGITUDE
+        description: "Coordenada de longitude do aeródromo em formato de texto."
+      - name: ALTITUDE
+        description: "Altitude do aeródromo em formato de texto."
+      - name: OPERACAO
+        description: "Tipo de operação do aeródromo (e.g., CIVIL, MILITAR, MISTA)."
+      - name: AIP_BRASIL
+        description: "Informações do AIP Brasil relacionadas ao aeródromo."
+      - name: DESIGNACAO
+        description: "Designação da pista principal."
+      - name: COMPRIMENTO
+        description: "Comprimento da pista principal."
+      - name: LARGURA
+        description: "LARGURA da pista principal."
+      - name: RESISTENCIA
+        description: "Resistência da pista principal."
+      - name: SUPERFICIE
+        description: "Tipo de superfície da pista principal."
+      - name: DESIGNACAO_2
+        description: "Designação da segunda pista (se houver)."
+      - name: COMPRIMENTO_2
+        description: "Comprimento da segunda pista (se houver)."
+      - name: LARGURA_2
+        description: "LARGURA da segunda pista (se houver)."
+      - name: RESISTENCIA_2
+        description: "Resistência da segunda pista (se houver)."
+      - name: SUPERFICIE_2
+        description: "Tipo de superfície da segunda pista (se houver)."
+      - name: DESIGNACAO_3
+        description: "Designação da terceira pista (se houver)."
+      - name: COMPRIMENTO_3
+        description: "Comprimento da terceira pista (se houver)."
+      - name: LARGURA_3
+        description: "LARGURA da terceira pista (se houver)."
+      - name: RESISTENCIA_3
+        description: "Resistência da terceira pista (se houver)."
+      - name: SUPERFICIE_3
+        description: "Tipo de superfície da terceira pista (se houver)."
+      - name: RAMPAS_DE_APROXIMACAO
+        description: "Informações sobre rampas de aproximação."
+      - name: FORMATO_DA_AREA_DE_POUSO
+        description: "Formato da área de pouso."
+      - name: DIMENSOES
+        description: "Dimensões da área de pouso."
+      - name: RESISTENCIA_4
+        description: "Resistência da área de pouso."
+      - name: SUPERFICIE_4
+        description: "Tipo de superfície da área de pouso."
+      - name: P1
+        description: "Campo genérico P1."
+      - name: P2
+        description: "Campo genérico P2."
+      - name: P3
+        description: "Campo genérico P3."
+      - name: P4
+        description: "Campo genérico P4."
+      - name: PORTARIAS
+        description: "Informações sobre portarias aplicáveis."
+      - name: COLUNA_36
+        description: "Coluna genérica 36 (a ser investigada/renomeada em staging)."
+      - name: COLUNA_37
+        description: "Coluna genérica 37 (a ser investigada/renomeada em staging)."
+      - name: COLUNA_38
+        description: "Coluna genérica 38 (a ser investigada/renomeada em staging)."
+      - name: PORTARIA_N_189672026_E_ALTERACOES
+        description: "Informações da Portaria Nº 18967/2026 e alterações."
+      - name: PORTARIA_N_173882025_A_CLASSE_I_SE_DIVIDE_AINDA_EM_RBAC_121_RBAC_135_REGULAR_E_OUTRAS_OPERACOES
+        description: "Informações da Portaria Nº 17388/2025 sobre classes de operação."
+      - name: PORTARIA_N_20072014_E_ALTERACOES_=_REGIME_TARIFARIO_DIFERENCIADO
+        description: "Informações da Portaria Nº 2007/2014 sobre regime tarifário diferenciado."
+      - name: AERONAVE_CRITICA
+        description: "Indicador se o aeródromo possui restrições para aeronaves críticas."
+      - name: TIPO_DE_APROX_CABECEIRAS
+        description: "Tipo de aproximação para as cabeceiras."
+      - name: CAT_SESCINC
+        description: "Categoria de Serviço de Salvamento e Combate a Incêndio (SESCINC)."
+      - name: R1
+        description: "Campo genérico R1."
+      - name: R2
+        description: "Campo genérico R2."
+      - name: REFERENCIAS
+        description: "Referências adicionais."
+      - name: RESTRICAOOES
+        description: "Restrições operacionais do aeródromo."
+      - name: SITUACAO
+        description: "Situação atual do aeródromo (e.g., ATIVO, INATIVO)."
+      - name: R1_2
+        description: "Campo genérico R1_2."
+      - name: REFERENCIA
+        description: "Referência adicional."
+      - name: SITUADO_NA_AMAZONIA_LEGAL
+        description: "Indicador se o aeródromo está situado na Amazônia Legal."
+      - name: OBSERVACOES
+        description: "Observações gerais sobre o aeródromo."
